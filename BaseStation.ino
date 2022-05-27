@@ -71,10 +71,10 @@ void loop()
   LT.setDioIrqParams(IRQ_RADIO_ALL, (IRQ_TX_DONE + IRQ_RX_TX_TIMEOUT), 0, 0);
   LT.setHighSensitivity();*/
 
-  uint8_t packet_buf[128];
+  int16_t grid_square;
   
   //int32_t packet_length = LT.receive(packet_buf, sizeof(packet_buf), rangingRXTimeoutmS, WAIT_RX);
-  int packet_length = LT.receiveRangingOrData(packet_buf, sizeof(packet_buf), RangingAddress, rangingRXTimeoutmS, TXpower, WAIT_RX); 
+  int packet_length = LT.receiveRangingOrData((byte*)&grid_square, sizeof(grid_square), RangingAddress, rangingRXTimeoutmS, TXpower, WAIT_RX); 
 
   if (packet_length == -1) {
     Serial.print("Error: ");
@@ -85,33 +85,14 @@ void loop()
   else if (packet_length == 0) {
     Serial.println("Ranging success");
     return;
-  }
-      
-  struct Packet {
-    uint32_t marker;
-    uint32_t time;
-    int32_t pressure;
-    double acc;
-    int16_t temp;
-    double distance;
-  };
-  if (packet_length != sizeof(struct Packet)) {
+  } else if (packet_length != sizeof(grid_square)) {
     Serial.println("Length mismatch");
     return;
   }
+      
   
-  struct Packet *p = (struct Packet*)packet_buf;
-  if (p->marker != 0x5555AAAA) {
-    Serial.println("Marker mismatch");
-  }
-
-  Serial.print("t: "); Serial.print(p->time);
-  Serial.print("\tp: "); Serial.print(p->pressure);
-  Serial.print("\ttemp: "); Serial.print(p->temp);
-  
-  Serial.print("\tacc: "); Serial.print(p->acc);
-
-  Serial.print("\t\trange: "); Serial.println(p->distance);
+  Serial.print("Got grid square: ");
+  Serial.println(grid_square);
 }
 
 
