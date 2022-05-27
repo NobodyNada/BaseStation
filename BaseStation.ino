@@ -1,16 +1,6 @@
-/*******************************************************************************************************
-  Programs for Arduino - Copyright of the author Stuart Robinson - 16/03/20
-
-  This program is supplied as is, it is up to the user of the program to decide if the program is
-  suitable for the intended purpose and free from errors.
-*******************************************************************************************************/
-
-
-/*******************************************************************************************************
-  Program Operation -
-
-  Serial monitor baud rate is set at 9600
-*******************************************************************************************************/
+// OSU AIAA 2021-2022 Payload base station
+// Adapted from 55_Ranging_Slave by Stuart Robinson: 
+// https://github.com/StuartsProjects/SX12XX-LoRa/blob/master/examples/SX128x_examples/Ranging/55_Ranging_Slave/55_Ranging_Slave.ino
 
 #define programversion "V1.0"
 
@@ -20,77 +10,32 @@
 
 SX128XLT LT;
 
-uint32_t endwaitmS;
-uint16_t IrqStatus;
-uint32_t response_sent;
-
 
 void loop()
 {
-  Serial.flush();
-
-  
-  /*LT.receiveRanging(RangingAddress, 0, TXpower, NO_WAIT);
-
-  endwaitmS = millis() + 300;
-
-  while (!digitalRead(DIO1) && (millis() <= endwaitmS));          //wait for Ranging valid or timeout
-
-  if (millis() >= endwaitmS)
-  {
-    Serial.print("Error - Ranging Receive Timeout!! Irq: ");
-    LT.printIrqStatus();
-    Serial.println();
-  }
-  else
-  {
-    IrqStatus = LT.readIrqStatus();
-    digitalWrite(LED1, HIGH);
-
-    if (~IrqStatus & IRQ_RANGING_SLAVE_RESPONSE_DONE)
-    {
-      Serial.print("Slave error,");
-      Serial.print(",Irq,");
-      Serial.print(IrqStatus, HEX);
-      LT.printIrqStatus();
-    } else {
-      digitalWrite(LED1, LOW);
-      Serial.print("Ranging success ");
-      LT.printIrqStatus();
-      Serial.println();
-    }
-  }
-
-  return;
-
-  LT.setPacketType(PACKET_TYPE_LORA);
-  LT.setRfFrequency(Frequency, Offset);
-  LT.setBufferBaseAddress(0, 0);
-  LT.setModulationParams(SpreadingFactor, Bandwidth, CodeRate);
-  LT.setPacketParams(12, LORA_PACKET_VARIABLE_LENGTH, 250, LORA_CRC_ON, LORA_IQ_NORMAL, 0, 0);
-  LT.setDioIrqParams(IRQ_RADIO_ALL, (IRQ_TX_DONE + IRQ_RX_TX_TIMEOUT), 0, 0);
-  LT.setHighSensitivity();*/
-
   int16_t grid_square;
-  
-  //int32_t packet_length = LT.receive(packet_buf, sizeof(packet_buf), rangingRXTimeoutmS, WAIT_RX);
+
+  // Wait for either a ranging request or a data packet from the payload.
   int packet_length = LT.receiveRangingOrData((byte*)&grid_square, sizeof(grid_square), RangingAddress, rangingRXTimeoutmS, TXpower, WAIT_RX); 
 
   if (packet_length == -1) {
+    // Something went wrong.
     Serial.print("Error: ");
     LT.printIrqStatus();
     Serial.println();
     return;
   }
   else if (packet_length == 0) {
+    // We recieved a ranging packet; the SX1280 will automatically send a response.
     Serial.println("Ranging success");
     return;
   } else if (packet_length != sizeof(grid_square)) {
+    // We recieved a data packet, but it was the wrong length.
     Serial.println("Length mismatch");
     return;
   }
       
-  
+  // We recieved a data packet containg the grid square estimate.
   Serial.print("Got grid square: ");
   Serial.println(grid_square);
 }
